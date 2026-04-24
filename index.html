@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UNCLASSIFIED - Advanced COFM Calculator</title>
+    <script src="https://cdn.jsdelivr.net/npm/milsymbol/dist/milsymbol.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f1f5f9; color: #1e293b; margin: 0; padding: 20px; }
+        h1, h2, h3, h4 { color: #0f172a; margin-top: 0; }
+        .header-title { text-align: center; border-bottom: 2px solid #cbd5e1; padding-bottom: 10px; margin-bottom: 20px;}
+        .unclass { text-align: center; color: #16a34a; font-weight: bold; font-size: 1.2em; margin-bottom: 10px;}
+        
+        .grid-container { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; max-width: 1500px; margin: 0 auto; }
+        .full-width { grid-column: span 2; }
+        
+        .panel { background: #fff; border-radius: 6px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); padding: 20px; }
+        .blue-panel { border-top: 5px solid #1d4ed8; }
+        .red-panel { border-top: 5px solid #b91c1c; }
+        .log-panel { border-top: 5px solid #475569; max-height: 400px; overflow-y: auto;}
+        .grave-panel { border-top: 5px solid #000; }
+        
+        .controls-row { display: flex; gap: 10px; margin-bottom: 15px; align-items: center; flex-wrap: wrap;}
+        select, input[type="text"] { padding: 6px; border: 1px solid #cbd5e1; border-radius: 4px; }
+        
+        /* Sliders */
+        .slider-group { margin-bottom: 15px; background: #f8fafc; padding: 10px; border-radius: 5px; border: 1px solid #e2e8f0;}
+        .slider-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px; font-size: 0.9em; font-weight: bold;}
+        input[type="range"] { flex-grow: 1; margin: 0 10px; }
+
+        /* Drag and Drop */
+        .palette-header { display: flex; justify-content: space-between; align-items: center; font-size: 0.9em; font-weight: bold; color: #475569; margin-bottom: 5px; }
+        .palette-search { padding: 4px 8px; border: 1px solid #94a3b8; border-radius: 4px; width: 50%; font-size: 0.9em; }
+        .palette { display: flex; flex-wrap: wrap; gap: 10px; padding: 10px; background: #e2e8f0; border-radius: 6px; min-height: 80px; max-height: 350px; overflow-y: auto; margin-bottom: 15px; align-content: flex-start;}
+        
+        .drop-zone { border: 2px dashed #94a3b8; border-radius: 6px; padding: 20px; text-align: center; min-height: 80px; background: #f8fafc; transition: background 0.2s; margin-bottom: 15px;}
+        .drop-zone.dragover { background: #e0f2fe; border-color: #38bdf8; }
+        .drop-zone.dragover-red { background: #fee2e2; border-color: #f87171; }
+
+        .unit-badge { display: flex; flex-direction: column; align-items: center; width: 75px; cursor: grab; padding: 5px; border-radius: 4px; background: transparent; transition: background 0.2s;}
+        .unit-badge:hover { background: #cbd5e1; }
+        .unit-badge:active { cursor: grabbing; }
+        
+        .unit-name-lbl { font-size: 10px; text-align: center; margin-top: 4px; line-height: 1.1; font-weight: bold; color: #334155;}
+        .symbol-svg-wrapper { display: flex; justify-content: center; align-items: center; height: 45px;}
+
+        /* Tables */
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.9em; }
+        th, td { text-align: left; padding: 8px; border-bottom: 1px solid #e2e8f0; vertical-align: middle;}
+        th { background-color: #f8fafc; }
+        .num-input { width: 60px; padding: 4px; border: 1px solid #cbd5e1; border-radius: 3px; }
+        
+        /* Buttons */
+        .btn { padding: 6px 12px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 0.9em; transition: 0.2s;}
+        .btn-kill { background: #000; color: white; font-size: 0.8em; padding: 4px 8px; }
+        .btn-kill:hover { background: #333; }
+        .btn-remove { background: #ef4444; color: white; font-size: 0.8em; padding: 4px 8px; }
+        
+        .action-bar { display: flex; gap: 10px; margin-top: 20px; }
+        .btn-calc { flex-grow: 3; background: #0f172a; color: white; padding: 15px; font-size: 1.2em; }
+        .btn-calc:hover { background: #1d4ed8; }
+        
+        .btn-export { flex-grow: 1; background: #0369a1; color: white; padding: 15px; font-size: 1.1em; }
+        .btn-export:hover { background: #0284c7; }
+        
+        .btn-reset { flex-grow: 1; background: #b91c1c; color: white; padding: 15px; font-size: 1.1em; }
+        .btn-reset:hover { background: #ef4444; }
+
+        .btn-repeat { background: #16a34a; color: white; padding: 4px 8px; font-size: 0.8em; }
+        
+        .results-box { background: #e0f2fe; border: 1px solid #7dd3fc; padding: 15px; border-radius: 6px; margin-top: 20px; display: none; }
+        .ratio-text { font-size: 1.5em; font-weight: bold; color: #0369a1; }
+        
+        .history-item { border-bottom: 1px solid #e2e8f0; padding: 10px 0; }
+        .graveyard-item { display: inline-flex; align-items: center; background: #e2e8f0; padding: 4px 8px; border-radius: 4px; font-size: 0.85em; margin: 4px; border: 1px solid #94a3b8; gap: 5px;}
+    </style>
+</head>
+<body>
+
+    <div class="unclass">UNCLASSIFIED</div>
+    <div class="header-title">
+        <h1>Correlation of Forces and Means (COFM)</h1>
+        <div><label>Operation: <input type="text" id="opName" value="Pacific Pugilist"></label> | <label>Objective: <input type="text" id="opObj" value="Wet Gap Crossing"></label></div>
+    </div>
+
+    <div class="grid-container">
+        
+        <div class="panel blue-panel">
+            <h2>Friendly Force (Blue)</h2>
+            
+            <div class="controls-row">
+                <label>Posture:</label>
+                <select id="bluePosture">
+                    <option value="deliberate_attack" selected>Deliberate Attack</option>
+                    <option value="hasty_attack">Hasty Attack</option>
+                    <option value="movement_to_contact">Movement to Contact</option>
+                    <option value="prepared_defense">Prepared Defense</option>
+                    <option value="hasty_defense">Hasty Defense</option>
+                    <option value="delay">Delay</option>
+                </select>
+                <label>METT-TC:</label>
+                <select id="blueMettTc">
+                    <option value="0.20">+20%</option>
+                    <option value="0.10">+10%</option>
+                    <option value="0.0" selected>0%</option>
+                    <option value="-0.10">-10%</option>
+                    <option value="-0.20">-20%</option>
+                </select>
+            </div>
+
+            <div class="slider-group">
+                <div style="font-size: 0.85em; color: #475569; margin-bottom: 5px;">Echelons Above Division (EAD) Allocation</div>
+                <div class="slider-row"><span>Fires:</span> <input type="range" id="blueFA" min="0" max="100" value="100" oninput="updateSliderVal('blueFA_val', this.value)"><span id="blueFA_val">100%</span></div>
+                <div class="slider-row"><span>CAS:</span> <input type="range" id="blueCAS" min="0" max="100" value="100" oninput="updateSliderVal('blueCAS_val', this.value)"><span id="blueCAS_val">100%</span></div>
+                <div class="slider-row"><span>EW/Cyber:</span> <input type="range" id="blueEW" min="0" max="100" value="80" oninput="updateSliderVal('blueEW_val', this.value)"><span id="blueEW_val">80%</span></div>
+            </div>
+
+            <div class="palette-header">
+                <span>Unit Palette (Drag from here)</span>
+                <input type="text" id="blueSearch" class="palette-search" placeholder="Search units..." onkeyup="filterPalette('blue')">
+            </div>
+            <div class="palette" id="bluePalette"></div>
+            
+            <div class="drop-zone" id="blueDropZone" ondrop="handleDrop(event, 'blue')" ondragover="allowDrop(event, 'blue')" ondragleave="leaveDrop(event, 'blue')">
+                <strong>Drop Friendly Units Here</strong>
+            </div>
+
+            <table id="blueTable">
+                <thead>
+                    <tr>
+                        <th style="width: 50px;">Icon</th>
+                        <th>Unit</th>
+                        <th>Strength %</th>
+                        <th>F.E.</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="blueList"></tbody>
+            </table>
+            <div style="text-align: right; margin-top: 10px; font-weight: bold; font-size: 1.1em; color: #1d4ed8;">
+                Base Force Equivalent: <span id="blueTotalFe">0.00</span>
+            </div>
+        </div>
+
+        <div class="panel red-panel">
+            <h2>Enemy Force (Red)</h2>
+            
+            <div class="controls-row">
+                <label>Posture:</label>
+                <select id="redPosture">
+                    <option value="prepared_defense" selected>Prepared Defense</option>
+                    <option value="hasty_defense">Hasty Defense</option>
+                    <option value="delay">Delay</option>
+                    <option value="deliberate_attack">Deliberate Attack</option>
+                    <option value="hasty_attack">Hasty Attack</option>
+                    <option value="movement_to_contact">Movement to Contact</option>
+                </select>
+                <label>METT-TC:</label>
+                <select id="redMettTc">
+                    <option value="0.20">+20%</option>
+                    <option value="0.10">+10%</option>
+                    <option value="0.0" selected>0%</option>
+                    <option value="-0.10">-10%</option>
+                    <option value="-0.20">-20%</option>
+                </select>
+            </div>
+
+            <div class="slider-group">
+                <div style="font-size: 0.85em; color: #475569; margin-bottom: 5px;">Theater / Army Group Allocation</div>
+                <div class="slider-row"><span>Fires:</span> <input type="range" id="redFA" min="0" max="100" value="33" oninput="updateSliderVal('redFA_val', this.value)"><span id="redFA_val">33%</span></div>
+                <div class="slider-row"><span>CAS:</span> <input type="range" id="redCAS" min="0" max="100" value="0" oninput="updateSliderVal('redCAS_val', this.value)"><span id="redCAS_val">0%</span></div>
+                <div class="slider-row"><span>EW/Cyber:</span> <input type="range" id="redEW" min="0" max="100" value="50" oninput="updateSliderVal('redEW_val', this.value)"><span id="redEW_val">50%</span></div>
+            </div>
+
+            <div class="palette-header">
+                <span>Unit Palette (Drag from here)</span>
+                <input type="text" id="redSearch" class="palette-search" placeholder="Search units..." onkeyup="filterPalette('red')">
+            </div>
+            <div class="palette" id="redPalette"></div>
+
+            <div class="drop-zone" id="redDropZone" ondrop="handleDrop(event, 'red')" ondragover="allowDrop(event, 'red')" ondragleave="leaveDrop(event, 'red')">
+                <strong>Drop Enemy Units Here</strong>
+            </div>
+            
+            <table id="redTable">
+                <thead>
+                    <tr>
+                        <th style="width: 50px;">Icon</th>
+                        <th>Unit</th>
+                        <th>Strength %</th>
+                        <th>F.E.</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="redList"></tbody>
+            </table>
+            <div style="text-align: right; margin-top: 10px; font-weight: bold; font-size: 1.1em; color: #b91c1c;">
+                Base Force Equivalent: <span id="redTotalFe">0.00</span>
+            </div>
+        </div>
+
+        <div class="full-width action-bar">
+            <button class="btn btn-calc" onclick="runCalculation()">Calculate Engagement</button>
+            <button class="btn btn-export" onclick="exportReport()">Export Report</button>
+            <button class="btn btn-reset" onclick="resetCalculator()">Reset Calculator</button>
+        </div>
+
+        <div class="full-width results-box" id="currentResult"></div>
+
+        <div class="panel log-panel">
+            <h3>Event Log (History)</h3>
+            <div id="eventLogContainer"><em>No engagements recorded yet.</em></div>
+        </div>
+
+        <div class="panel grave-panel">
+            <h3>Graveyard (Destroyed Units)</h3>
+            <p style="font-size:0.85em; color: #64748b;">Units sent here are removed from the active Order of Battle.</p>
+            <div id="graveyardContainer"><em>Graveyard is empty.</em></div>
+        </div>
+
+    </div>
+
+    <script>
+        // STRICT MIL-STD-2525 SIDCs (Corrected Platoon 'D' and 2525D ATGM codes)
+        const unitDB = {
+            // BLUE IBCT
+            "Infantry Bde (IBCT)": { fe: 1.0, sidc: "SFGPUCI----H---", side: "blue" },
+            "Infantry Bn (IBCT)": { fe: 0.33, sidc: "SFGPUCI----F---", side: "blue" },
+            "Rifle Co (IBCT)": { fe: 0.11, sidc: "SFGPUCI----E---", side: "blue" },
+            "EN Bn (IBCT)": { fe: 0.10, sidc: "SFGPUCE----F---", side: "blue" },
+            "EN Co (IBCT)": { fe: 0.03, sidc: "SFGPUCE----E---", side: "blue" },
+            
+            // BLUE SBCT
+            "Stryker Bde (SBCT)": { fe: 1.0, sidc: "SFGPUCM----H---", side: "blue" },
+            "Stryker Bn (SBCT)": { fe: 0.33, sidc: "SFGPUCM----F---", side: "blue" },
+            "Stryker Co (SBCT)": { fe: 0.11, sidc: "SFGPUCM----E---", side: "blue" },
+            "CAV Sqdn (SBCT)": { fe: 0.20, sidc: "SFGPUCR----F---", side: "blue" },
+            "Cavalry Trp (SBCT)": { fe: 0.06, sidc: "SFGPUCR----E---", side: "blue" },
+            "EN Bn (SBCT)": { fe: 0.10, sidc: "SFGPUCE----F---", side: "blue" },
+            "EN Co (SBCT)": { fe: 0.03, sidc: "SFGPUCE----E---", side: "blue" },
+
+            // BLUE ABCT
+            "Armored Bde (ABCT)": { fe: 1.0, sidc: "SFGPUCA----H---", side: "blue" },
+            "CA-Bn (IN)(ABCT)": { fe: 0.33, sidc: "SFGPUCM----F---", side: "blue" },
+            "CA-Bn (AR)(ABCT)": { fe: 0.33, sidc: "SFGPUCA----F---", side: "blue" },
+            "Rifle Co (ABCT)": { fe: 0.11, sidc: "SFGPUCM----E---", side: "blue" },
+            "Armor Co (ABCT)": { fe: 0.11, sidc: "SFGPUCA----E---", side: "blue" },
+            "CAV Sqdn (ABCT)": { fe: 0.20, sidc: "SFGPUCR----F---", side: "blue" },
+            "Cavalry Trp (ABCT)": { fe: 0.06, sidc: "SFGPUCR----E---", side: "blue" },
+            "EN Bn (ABCT)": { fe: 0.10, sidc: "SFGPUCE----F---", side: "blue" },
+            "EN Co (A)(ABCT)": { fe: 0.03, sidc: "SFGPUCE----E---", side: "blue" },
+            "EN Co (B)(ABCT)": { fe: 0.03, sidc: "SFGPUCE----E---", side: "blue" },
+            
+            // BLUE ENABLERS / FIRES
+            "FA M777 Bn": { fe: 0.15, sidc: "SFGPUCF----F---", side: "blue" },
+            "FA M777 Btry": { fe: 0.05, sidc: "SFGPUCF----E---", side: "blue" },
+            "FA Paladin Bn": { fe: 0.15, sidc: "SFGPUCF----F---", side: "blue" },
+            "FA Paladin Btry": { fe: 0.05, sidc: "SFGPUCF----E---", side: "blue" },
+            "MLRS/HIMARS Bn": { fe: 0.15, sidc: "SFGPUCFR---F---", side: "blue" },
+
+            // BLUE CAB & Aviation
+            "CAB (Aviation)": { fe: 0.5, sidc: "SFGPUCV----H---", side: "blue" },
+            "AH-64 Bn": { fe: 0.15, sidc: "SFGPUCV----F---", side: "blue" },
+            "AH-64 Co": { fe: 0.05, sidc: "SFGPUCV----E---", side: "blue" },
+            "UAS Co": { fe: 0.05, sidc: "SFGPUCVU---E---", side: "blue" },
+            "SHORAD Btry": { fe: 0.05, sidc: "SFGPUCD----E---", side: "blue" },
+            "Patriot Btry": { fe: 0.10, sidc: "SFGPUCD----E---", side: "blue" },
+            
+            // BLUE SOF (Forced to Ground frame to avoid inverted triangles)
+            "SOF Co": { fe: 0.15, sidc: "SFFPU------E---", side: "blue" },
+            
+            // RED HEAVY
+            "CA-Bde (Heavy)": { fe: 1.0, sidc: "SHGPUCA----H---", side: "red" },
+            "CA-Bn (Mech)(Heavy)": { fe: 0.33, sidc: "SHGPUCM----F---", side: "red" },
+            "CA-Bn (Armor)(Heavy)": { fe: 0.33, sidc: "SHGPUCA----F---", side: "red" },
+            "Rifle Co (Heavy)": { fe: 0.11, sidc: "SHGPUCM----E---", side: "red" },
+            "Armor Co (Heavy)": { fe: 0.11, sidc: "SHGPUCA----E---", side: "red" },
+            
+            // RED MEDIUM
+            "CA-Bde (Medium)": { fe: 1.0, sidc: "SHGPUCM----H---", side: "red" },
+            "CA-Bn (Mech)(Medium)": { fe: 0.33, sidc: "SHGPUCM----F---", side: "red" },
+            "CA-Bn (Armor)(Medium)": { fe: 0.33, sidc: "SHGPUCA----F---", side: "red" },
+            "Rifle Co (Medium)": { fe: 0.11, sidc: "SHGPUCM----E---", side: "red" },
+            "Armor Co (Medium)": { fe: 0.11, sidc: "SHGPUCA----E---", side: "red" },
+            "Airborne Bn": { fe: 0.25, sidc: "SHGPUCI----F---", side: "red" },
+
+            // RED ENABLERS / OTHERS (Fixed Platoons to 'D')
+            "Firepower Co": { fe: 0.10, sidc: "SHGPUCF----E---", side: "red" },
+            "AD Plt": { fe: 0.02, sidc: "SHGPUCD----D---", side: "red" }, 
+            "Mortar Plt": { fe: 0.03, sidc: "SHGPUCF----D---", side: "red" }, 
+            "Wpn Plt": { fe: 0.03, sidc: "SHGPUCI----D---", side: "red" }, 
+            "Recon Sqdn": { fe: 0.20, sidc: "SHGPUCR----F---", side: "red" },
+            "Recon Trp": { fe: 0.06, sidc: "SHGPUCR----E---", side: "red" },
+            "Recon Plt": { fe: 0.03, sidc: "SHGPUCR----D---", side: "red" }, 
+            "Arty Bn (Rocket)": { fe: 0.15, sidc: "SHGPUCFR---F---", side: "red" },
+            "Arty Btry (Rocket)": { fe: 0.05, sidc: "SHGPUCFR---E---", side: "red" },
+            "Air Defense Bn": { fe: 0.10, sidc: "SHGPUCD----F---", side: "red" },
+            "Air Defense Btry": { fe: 0.03, sidc: "SHGPUCD----E---", side: "red" },
+            
+            // RED AVIATION
+            "Attack Helo Bn": { fe: 0.15, sidc: "SHGPUCV----F---", side: "red" },
+            "Attack Helo Co": { fe: 0.05, sidc: "SHGPUCV----E---", side: "red" },
+            "Armed UAS Co": { fe: 0.05, sidc: "SHGPUCVU---E---", side: "red" },
+            "UAS Co": { fe: 0.05, sidc: "SHGPUCVU---E---", side: "red" },
+            
+            // RED SOF & ATGM
+            "SOF Co": { fe: 0.15, sidc: "SHFPU------E---", side: "red" },
+            
+            // ATGM using exactly provided 2525D code, with corrected Echelons (16=Bn, 15=Co)
+            "ATGM Bn": { fe: 0.15, sidc: "10061000161204000000", side: "red" }, 
+            "ATGM Co": { fe: 0.05, sidc: "10061000151204000000", side: "red" }  
+        };
+
+        // Handles both 15-char and 20-digit SIDCs for proper palette sorting
+        function getEchelonWeight(sidc) {
+            if (sidc.length === 20) {
+                const ech = sidc.substring(8, 10);
+                if(ech === '18') return 1; // Bde
+                if(ech === '16') return 2; // Bn
+                if(ech === '15') return 3; // Co
+                if(ech === '14') return 4; // Plt
+                return 5;
+            } else {
+                const ech = sidc.charAt(11);
+                if(ech === 'H') return 1; // Brigade
+                if(ech === 'F') return 2; // Battalion
+                if(ech === 'E') return 3; // Company
+                if(ech === 'D') return 4; // Platoon
+                return 5;
+            }
+        }
+
+        let orderOfBattle = { blue: [], red: [] };
+        let eventHistory = [];
+        let graveyard = [];
+
+        window.onload = function() {
+            initPalettes();
+            renderTables();
+        };
+
+        // SVG Cache Generator (Prevents CPU lag)
+        function generateAndCacheSVG(sidc, size) {
+            try {
+                let symbol = new ms.Symbol(sidc, { size: size });
+                return symbol.asSVG();
+            } catch (e) {
+                console.error("Milsymbol error for SIDC:", sidc, e);
+                return `<div style="border:1px solid red; font-size:10px;">ERR</div>`; 
+            }
+        }
+
+        function initPalettes() {
+            const bPal = document.getElementById('bluePalette');
+            const rPal = document.getElementById('redPalette');
+            
+            if(!bPal || !rPal) return;
+
+            let sortedUnits = Object.entries(unitDB).map(([name, data]) => ({name, ...data}));
+            sortedUnits.sort((a, b) => {
+                let weightA = getEchelonWeight(a.sidc);
+                let weightB = getEchelonWeight(b.sidc);
+                if (weightA !== weightB) return weightA - weightB;
+                return a.name.localeCompare(b.name);
+            });
+
+            // Draw to cache and append
+            sortedUnits.forEach(data => {
+                unitDB[data.name].svgLarge = generateAndCacheSVG(data.sidc, 25);
+                unitDB[data.name].svgSmall = generateAndCacheSVG(data.sidc, 20);
+                unitDB[data.name].svgTiny = generateAndCacheSVG(data.sidc, 15);
+
+                const badge = document.createElement('div');
+                badge.className = 'unit-badge';
+                badge.draggable = true;
+                badge.ondragstart = function(e) { drag(e, data.name); };
+                
+                badge.innerHTML = `
+                    <div class="symbol-svg-wrapper">${unitDB[data.name].svgLarge}</div>
+                    <div class="unit-name-lbl">${data.name}</div>
+                `;
+                
+                if (data.side === 'blue') bPal.appendChild(badge);
+                else rPal.appendChild(badge);
+            });
+        }
+
+        function filterPalette(side) {
+            const query = document.getElementById(side + 'Search').value.toLowerCase();
+            const palette = document.getElementById(side + 'Palette');
+            const badges = palette.getElementsByClassName('unit-badge');
+            
+            for(let badge of badges) {
+                const name = badge.querySelector('.unit-name-lbl').innerText.toLowerCase();
+                if(name.includes(query)) {
+                    badge.style.display = 'flex';
+                } else {
+                    badge.style.display = 'none';
+                }
+            }
+        }
+
+        function drag(ev, unitName) { ev.dataTransfer.setData("unitName", unitName); }
+        function allowDrop(ev, side) {
+            ev.preventDefault();
+            ev.currentTarget.classList.add(side === 'blue' ? 'dragover' : 'dragover-red');
+        }
+        function leaveDrop(ev, side) {
+            ev.currentTarget.classList.remove(side === 'blue' ? 'dragover' : 'dragover-red');
+        }
+        function handleDrop(ev, targetSide) {
+            ev.preventDefault();
+            ev.currentTarget.classList.remove(targetSide === 'blue' ? 'dragover' : 'dragover-red');
+            const unitName = ev.dataTransfer.getData("unitName");
+            if (!unitName || !unitDB[unitName] || unitDB[unitName].side !== targetSide) return; 
+            
+            orderOfBattle[targetSide].push({
+                name: unitName,
+                strength: 100,
+                baseFE: unitDB[unitName].fe,
+                sidc: unitDB[unitName].sidc
+            });
+            renderTables();
+        }
+
+        function updateSliderVal(id, val) { document.getElementById(id).innerText = val + "%"; }
+        function updateStrength(side, index, value) {
+            let val = parseInt(value);
+            if (val < 0) val = 0; if (val > 100) val = 100;
+            orderOfBattle[side][index].strength = val;
+            renderTables();
+        }
+
+        function removeUnit(side, index) {
+            orderOfBattle[side].splice(index, 1);
+            renderTables();
+        }
+
+        function sendToGraveyard(side, index) {
+            const unit = orderOfBattle[side].splice(index, 1)[0];
+            graveyard.push({ ...unit, side: side, tod: new Date().toLocaleTimeString() });
+            renderTables();
+            renderGraveyard();
+        }
+
+        function renderTables() {
+            ['blue', 'red'].forEach(side => {
+                const tbody = document.getElementById(side + 'List');
+                tbody.innerHTML = '';
+                let totalFe = 0;
+
+                orderOfBattle[side].forEach((unit, index) => {
+                    const unitTotalFe = unit.baseFE * (unit.strength / 100);
+                    totalFe += unitTotalFe;
+                    
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td style="width: 50px;">${unitDB[unit.name].svgSmall}</td>
+                        <td><strong>${unit.name}</strong></td>
+                        <td><input type="number" class="num-input" value="${unit.strength}" onchange="updateStrength('${side}', ${index}, this.value)"></td>
+                        <td><strong>${unitTotalFe.toFixed(2)}</strong></td>
+                        <td>
+                            <button class="btn btn-kill" onclick="sendToGraveyard('${side}', ${index})" title="Send to Graveyard">☠️</button>
+                            <button class="btn btn-remove" onclick="removeUnit('${side}', ${index})" title="Remove">X</button>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+                document.getElementById(side + 'TotalFe').innerText = totalFe.toFixed(2);
+            });
+        }
+
+        function renderGraveyard() {
+            const cont = document.getElementById('graveyardContainer');
+            if(graveyard.length === 0) { cont.innerHTML = "<em>Graveyard is empty.</em>"; return; }
+            cont.innerHTML = graveyard.map(u => 
+                `<div class="graveyard-item" style="border-left: 4px solid ${u.side==='blue'?'#1d4ed8':'#b91c1c'};">
+                    <div style="height:25px; display:flex; align-items:center;">${unitDB[u.name].svgTiny}</div> 
+                    <span><strong>${u.name}</strong> (KIA: ${u.tod})</span>
+                </div>`
+            ).join('');
+        }
+
+        function getRequiredRatio(bPosture, rPosture) {
+            const isBAttacking = bPosture.includes('attack') || bPosture === 'movement_to_contact';
+            const isRAttacking = rPosture.includes('attack') || rPosture === 'movement_to_contact';
+
+            if (isBAttacking && !isRAttacking) {
+                if (bPosture === 'deliberate_attack' && rPosture === 'prepared_defense') return 3.0;
+                if (bPosture === 'deliberate_attack' && rPosture === 'hasty_defense') return 2.5;
+                if (bPosture === 'hasty_attack' && rPosture === 'hasty_defense') return 2.5;
+                return 2.5; 
+            } else if (!isBAttacking && isRAttacking) {
+                if (rPosture === 'deliberate_attack' && bPosture === 'prepared_defense') return 1 / 3.0;
+                if (rPosture === 'deliberate_attack' && bPosture === 'hasty_defense') return 1 / 2.5;
+                return 1 / 2.5; 
+            }
+            return 1.0;
+        }
+
+        function estimateLosses(ratio, required) {
+            if(required === 1.0) return { blue: "15%", red: "15%" }; 
+            let advantage = ratio / required; 
+            if(advantage >= 1.5) return { blue: "5%", red: "40%" }; 
+            if(advantage >= 1.0) return { blue: "10%", red: "25%" }; 
+            if(advantage >= 0.7) return { blue: "20%", red: "15%" }; 
+            return { blue: "35%", red: "5%" }; 
+        }
+
+        function runCalculation() {
+            let bBaseFE = parseFloat(document.getElementById('blueTotalFe').innerText);
+            let rBaseFE = parseFloat(document.getElementById('redTotalFe').innerText);
+            if(bBaseFE === 0 && rBaseFE === 0) { alert("Drag and drop units to calculate."); return; }
+            if(bBaseFE === 0) bBaseFE = 0.01; if(rBaseFE === 0) rBaseFE = 0.01;
+
+            const bFa = parseFloat(document.getElementById('blueFA').value) / 100 * 0.25;
+            const bCas = parseFloat(document.getElementById('blueCAS').value) / 100 * 0.25;
+            const bEw = parseFloat(document.getElementById('blueEW').value) / 100 * 0.15;
+
+            const rFa = parseFloat(document.getElementById('redFA').value) / 100 * 0.25;
+            const rCas = parseFloat(document.getElementById('redCAS').value) / 100 * 0.25;
+            const rEw = parseFloat(document.getElementById('redEW').value) / 100 * 0.15;
+
+            const bMultiplier = Math.max(0.5, 1 + bFa + bCas - rEw);
+            const rMultiplier = Math.max(0.5, 1 + rFa + rCas - bEw);
+
+            let bTotal = bBaseFE * bMultiplier;
+            let rTotal = rBaseFE * rMultiplier;
+
+            const bMett = parseFloat(document.getElementById('blueMettTc').value);
+            const rMett = parseFloat(document.getElementById('redMettTc').value);
+            
+            bTotal = bTotal * (1 + bMett);
+            rTotal = rTotal * (1 + rMett);
+
+            let rawRatio = bTotal / rTotal;
+            let displayRatio = rawRatio >= 1 ? `${rawRatio.toFixed(2)} : 1` : `1 : ${(1/rawRatio).toFixed(2)}`;
+
+            const bPost = document.getElementById('bluePosture').value;
+            const rPost = document.getElementById('redPosture').value;
+            const bPostTxt = document.getElementById('bluePosture').options[document.getElementById('bluePosture').selectedIndex].text;
+            const rPostTxt = document.getElementById('redPosture').options[document.getElementById('redPosture').selectedIndex].text;
+            
+            let reqRatio = getRequiredRatio(bPost, rPost);
+            
+            let isBlueAttacking = reqRatio >= 1.0;
+            let lossObj = {};
+            if(isBlueAttacking) lossObj = estimateLosses(rawRatio, reqRatio);
+            else {
+                let revLoss = estimateLosses(1/rawRatio, 1/reqRatio);
+                lossObj = { blue: revLoss.red, red: revLoss.blue }; 
+            }
+
+            const snap = {
+                timestamp: new Date().toLocaleTimeString(),
+                opName: document.getElementById('opName').value,
+                opObj: document.getElementById('opObj').value,
+                bPostVal: bPost, rPostVal: rPost,
+                bPostTxt: bPostTxt, rPostTxt: rPostTxt,
+                bMett: bMett, rMett: rMett,
+                displayRatio: displayRatio,
+                losses: lossObj,
+                bUnits: JSON.parse(JSON.stringify(orderOfBattle.blue)),
+                rUnits: JSON.parse(JSON.stringify(orderOfBattle.red)),
+                bFaVal: document.getElementById('blueFA').value,
+                bCasVal: document.getElementById('blueCAS').value,
+                bEwVal: document.getElementById('blueEW').value,
+                rFaVal: document.getElementById('redFA').value,
+                rCasVal: document.getElementById('redCAS').value,
+                rEwVal: document.getElementById('redEW').value
+            };
+            eventHistory.push(snap);
+
+            const resDiv = document.getElementById('currentResult');
+            resDiv.style.display = 'block';
+            resDiv.innerHTML = `
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <div>
+                        <h3 style="margin-bottom:0;">Friendly : Enemy Ratio</h3>
+                        <div class="ratio-text">${displayRatio}</div>
+                        <p style="margin:5px 0 0 0;"><strong>Estimated Losses:</strong> Blue ${lossObj.blue || "Unknown"} | Red ${lossObj.red || lossObj.revLoss || "Unknown"}</p>
+                    </div>
+                    <div style="text-align:right; font-size:0.9em; line-height:1.4;">
+                        <p style="margin:0;"><strong>Blue Posture:</strong> ${bPostTxt} (METT-TC: ${(bMett*100).toFixed(0)}%)</p>
+                        <p style="margin:0; color:#1d4ed8;">Final Blue F.E.: ${bTotal.toFixed(2)} (EAD Mult: ${bMultiplier.toFixed(2)}x)</p>
+                        <br>
+                        <p style="margin:0;"><strong>Red Posture:</strong> ${rPostTxt}  (METT-TC: ${(rMett*100).toFixed(0)}%)</p>
+                        <p style="margin:0; color:#b91c1c;">Final Red F.E.: ${rTotal.toFixed(2)} (EAD Mult: ${rMultiplier.toFixed(2)}x)</p>
+                    </div>
+                </div>
+            `;
+            
+            renderHistory();
+        }
+
+        function renderHistory() {
+            const log = document.getElementById('eventLogContainer');
+            log.innerHTML = '';
+            [...eventHistory].reverse().forEach((ev, idx) => {
+                const realIdx = eventHistory.length - 1 - idx;
+                let redLoss = ev.losses.red || ev.losses.revLoss || "Unknown";
+                log.innerHTML += `
+                    <div class="history-item">
+                        <strong>${ev.timestamp} | ${ev.opName} - ${ev.opObj}</strong>
+                        <div style="font-size:0.9em; margin-top:5px; display:flex; justify-content:space-between;">
+                            <span>Ratio: <span style="color:#0369a1; font-weight:bold;">${ev.displayRatio}</span> (Blue ${ev.losses.blue} / Red ${redLoss} losses)</span>
+                            <button class="btn btn-repeat" onclick="loadHistory(${realIdx})">Load & Repeat</button>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function loadHistory(index) {
+            const ev = eventHistory[index];
+            document.getElementById('opName').value = ev.opName;
+            document.getElementById('opObj').value = ev.opObj;
+            document.getElementById('bluePosture').value = ev.bPostVal;
+            document.getElementById('redPosture').value = ev.rPostVal;
+            document.getElementById('blueMettTc').value = ev.bMett.toFixed(2);
+            document.getElementById('redMettTc').value = ev.rMett.toFixed(2);
+            
+            document.getElementById('blueFA').value = ev.bFaVal; updateSliderVal('blueFA_val', ev.bFaVal);
+            document.getElementById('blueCAS').value = ev.bCasVal; updateSliderVal('blueCAS_val', ev.bCasVal);
+            document.getElementById('blueEW').value = ev.bEwVal; updateSliderVal('blueEW_val', ev.bEwVal);
+            document.getElementById('redFA').value = ev.rFaVal; updateSliderVal('redFA_val', ev.rFaVal);
+            document.getElementById('redCAS').value = ev.rCasVal; updateSliderVal('redCAS_val', ev.rCasVal);
+            document.getElementById('redEW').value = ev.rEwVal; updateSliderVal('redEW_val', ev.rEwVal);
+
+            orderOfBattle.blue = JSON.parse(JSON.stringify(ev.bUnits));
+            orderOfBattle.red = JSON.parse(JSON.stringify(ev.rUnits));
+            
+            renderTables();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function resetCalculator() {
+            if(!confirm("Are you sure you want to clear the current forces? (This will not delete your history or graveyard).")) return;
+            
+            orderOfBattle.blue = [];
+            orderOfBattle.red = [];
+            
+            document.getElementById('bluePosture').selectedIndex = 0;
+            document.getElementById('redPosture').selectedIndex = 0;
+            document.getElementById('blueMettTc').selectedIndex = 2;
+            document.getElementById('redMettTc').selectedIndex = 2;
+            
+            document.getElementById('blueFA').value = 100; updateSliderVal('blueFA_val', 100);
+            document.getElementById('blueCAS').value = 100; updateSliderVal('blueCAS_val', 100);
+            document.getElementById('blueEW').value = 80; updateSliderVal('blueEW_val', 80);
+            
+            document.getElementById('redFA').value = 33; updateSliderVal('redFA_val', 33);
+            document.getElementById('redCAS').value = 0; updateSliderVal('redCAS_val', 0);
+            document.getElementById('redEW').value = 50; updateSliderVal('redEW_val', 50);
+            
+            document.getElementById('currentResult').style.display = 'none';
+            renderTables();
+        }
+
+        function exportReport() {
+            let report = `COFM ENGAGEMENT REPORT\n`;
+            report += `Operation: ${document.getElementById('opName').value}\n`;
+            report += `Objective: ${document.getElementById('opObj').value}\n`;
+            report += `Generated: ${new Date().toLocaleString()}\n\n`;
+            
+            report += `--- CURRENT ORDER OF BATTLE ---\n`;
+            report += `BLUE FORCE:\n`;
+            if (orderOfBattle.blue.length === 0) report += `- None\n`;
+            orderOfBattle.blue.forEach(u => report += `- ${u.name} (Strength: ${u.strength}%, F.E.: ${(u.baseFE * u.strength / 100).toFixed(2)})\n`);
+            
+            report += `\nRED FORCE:\n`;
+            if (orderOfBattle.red.length === 0) report += `- None\n`;
+            orderOfBattle.red.forEach(u => report += `- ${u.name} (Strength: ${u.strength}%, F.E.: ${(u.baseFE * u.strength / 100).toFixed(2)})\n`);
+            
+            report += `\n--- EVENT HISTORY ---\n`;
+            if(eventHistory.length === 0) {
+                report += `No engagements calculated yet.\n`;
+            } else {
+                [...eventHistory].reverse().forEach(ev => {
+                    let redLoss = ev.losses.red || ev.losses.revLoss || "Unknown";
+                    report += `\n[${ev.timestamp}] ${ev.opName} - ${ev.opObj}\n`;
+                    report += `Blue Posture: ${ev.bPostTxt} | Red Posture: ${ev.rPostTxt}\n`;
+                    report += `Final Ratio: ${ev.displayRatio}\n`;
+                    report += `Estimated Losses -> Blue: ${ev.losses.blue}, Red: ${redLoss}\n`;
+                });
+            }
+            
+            const blob = new Blob([report], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `COFM_Report_${new Date().getTime()}.txt`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+    </script>
+</body>
+</html>

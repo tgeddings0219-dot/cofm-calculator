@@ -1,0 +1,19 @@
+{
+  "name": "cofm-calculator",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Correlation of Forces and Means (COFM) Calculator - a static web tool for force ratio analysis.",
+  "scripts": {
+    "dev": "npx --yes serve . -l 3000",
+    "start": "npx --yes serve . -l 3000",
+    "build": "echo 'Static site — no build step required.'"
+  },
+  "keywords": [
+    "cofm",
+    "force-ratio",
+    "military",
+    "calculator",
+    "static-site"
+  ],
+  "license": "UNLICENSED"
+}
